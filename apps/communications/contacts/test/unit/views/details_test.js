@@ -5,6 +5,10 @@ requireApp('communications/contacts/test/unit/mock_details_dom.js.html');
 
 require('/shared/js/text_normalizer.js');
 require('/shared/test/unit/mocks/mock_contact_all_fields.js');
+require('/shared/test/unit/mocks/mock_lazy_loader.js');
+require('/shared/test/unit/mocks/mock_multi_sim_action_button.js');
+require('/dialer/test/unit/mock_mmi_manager.js');
+require('/dialer/test/unit/mock_telephony_helper.js');
 
 requireApp('communications/contacts/js/views/details.js');
 requireApp('communications/contacts/js/utilities/event_listeners.js');
@@ -15,6 +19,7 @@ requireApp('communications/contacts/test/unit/mock_contacts.js');
 requireApp('communications/contacts/test/unit/mock_contacts_list_obj.js');
 requireApp('communications/contacts/test/unit/mock_fb.js');
 requireApp('communications/contacts/test/unit/mock_extfb.js');
+requireApp('communications/contacts/test/unit/mock_activities.js');
 
 require('/shared/test/unit/mocks/mock_contact_photo_helper.js');
 
@@ -23,6 +28,7 @@ var subject,
     realL10n,
     realOnLine,
     realMisc,
+    realActivityHandler,
     dom,
     contact,
     contactDetails,
@@ -52,8 +58,16 @@ var subject,
 
 var SCALE_RATIO = 1;
 
+if (!this.ActivityHandler) {
+  this.ActivityHandler = null;
+}
+
 var mocksHelperForDetailView = new MocksHelper([
-  'ContactPhotoHelper'
+  'ContactPhotoHelper',
+  'LazyLoader',
+  'MmiManager',
+  'MultiSimActionButton',
+  'TelephonyHelper'
 ]).init();
 
 suite('Render contact', function() {
@@ -71,6 +85,7 @@ suite('Render contact', function() {
   suiteSetup(function() {
     realOnLine = Object.getOwnPropertyDescriptor(navigator, 'onLine');
     realL10n = navigator.mozL10n;
+    realActivityHandler = window.ActivityHandler;
     navigator.mozL10n = {
       get: function get(key) {
         return key;
@@ -79,6 +94,9 @@ suite('Render contact', function() {
         this.localeFormat = function(date, format) {
           return date;
         };
+      },
+      translate: function() {
+
       }
     };
 
@@ -90,6 +108,8 @@ suite('Render contact', function() {
         return normalizedDate.toString();
       }
     };
+
+    window.ActivityHandler = MockActivities;
 
     Object.defineProperty(navigator, 'onLine', {
       configurable: true,
@@ -143,6 +163,7 @@ suite('Render contact', function() {
       Object.defineProperty(navigator, 'onLine', realOnLine);
     }
     utils.misc = realMisc;
+    window.ActivityHandler = realActivityHandler;
   });
 
   setup(function() {
@@ -667,6 +688,94 @@ suite('Render contact', function() {
       });
 
       subject.render(null, TAG_OPTIONS);
+    });
+  });
+
+  suite('> User actions', function() {
+    var realMozTelephony;
+    var realMozMobileConnection;
+    suiteSetup(function() {
+      realMozTelephony = navigator.mozTelephony;
+      realMozMobileConnection = navigator.mozMobileConnection;
+      navigator.mozTelephony = true;
+      navigator.mozMobileConnection = true;
+    });
+
+    suiteTeardown(function() {
+      navigator.mozTelephony = realMozTelephony;
+      navigator.mozMobileConnection = realMozMobileConnection;
+    });
+
+    setup(function() {
+      this.sinon.spy(LazyLoader, 'load');
+    });
+
+    teardown(function() {
+      LazyLoader.load.reset();
+    });
+
+    test(' > Not loading MultiSimActionButton when we are on an activity',
+         function() {
+      this.sinon.stub(MmiManager, 'isMMI').returns(true);
+      MockActivities.currentlyHandling = true;
+      subject.render(null, TAG_OPTIONS);
+
+      sinon.assert.notCalled(MmiManager.isMMI);
+      sinon.assert.neverCalledWith(LazyLoader.load,
+       ['/shared/js/multi_sim_action_button.js']);
+      MockActivities.currentlyHandling = false;
+    });
+
+    test('> Not loading MultiSimActionButton if we have a MMI code',
+         function() {
+      this.sinon.stub(MmiManager, 'isMMI').returns(true);
+
+      subject.render(null, TAG_OPTIONS);
+
+      sinon.assert.called(MmiManager.isMMI);
+      sinon.assert.neverCalledWith(LazyLoader.load,
+       ['/shared/js/multi_sim_action_button.js']);
+    });
+
+    test('> Load call button', function() {
+      this.sinon.stub(MmiManager, 'isMMI').returns(false);
+      subject.render(null, TAG_OPTIONS);
+
+      // We have two buttons, 2 calls per button created
+      assert.equal(LazyLoader.load.callCount, 4);
+      var spyCall = LazyLoader.load.getCall(1);
+      assert.deepEqual(
+        ['/shared/js/multi_sim_action_button.js'], spyCall.args[0]);
+    });
+
+    test('> Multiple MultiSimActionButtons initialized with correct values',
+         function() {
+      var theContact = new MockContactAllFields(true);
+      subject.setContact(theContact);
+      this.sinon.stub(MmiManager, 'isMMI').returns(false);
+      this.sinon.spy(window, 'MultiSimActionButton');
+
+      subject.render(null, TAG_OPTIONS);
+
+      var phone1 = container.querySelector('#call-or-pick-0');
+      var phone2 = container.querySelector('#call-or-pick-1');
+      var phoneNumber1 = theContact.tel[0].value;
+      var phoneNumber2 = theContact.tel[1].value;
+
+      sinon.assert.calledWith(MultiSimActionButton, phone1,
+           TelephonyHelper.call, 'ril.telephony.defaultServiceId',
+           sinon.match.func);
+      // Check the getter contains the correct phone number
+      var getterResult = MultiSimActionButton.args[0][3]();
+      assert.equal(phoneNumber1, getterResult);
+
+      sinon.assert.calledWith(MultiSimActionButton, phone2,
+           TelephonyHelper.call, 'ril.telephony.defaultServiceId',
+           sinon.match.func);
+      // Second call getter result
+      getterResult = MultiSimActionButton.args[1][3]();
+      assert.equal(phoneNumber2, getterResult);
+
     });
   });
 
