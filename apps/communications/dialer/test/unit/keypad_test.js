@@ -1,8 +1,9 @@
-/* globals CallButton, CallHandler, CallLogDBManager, gTonesFrequencies,
-           KeypadManager, MockCall, MockCallButton, MockCallsHandler,
+/* globals CallHandler, CallLogDBManager, gTonesFrequencies,
+           KeypadManager, MockCall, MockCallsHandler,
            MockDialerIndexHtml, MockIccManager, MockMozTelephony,
            MockNavigatorSettings, MockSettingsListener, MocksHelper,
-           MockTonePlayer, SimPicker, telephonyAddCall
+           MockTonePlayer, SimPicker, telephonyAddCall,
+           MockMultiSimActionButtonSingleton
 */
 
 'use strict';
@@ -13,7 +14,6 @@ require('/dialer/test/unit/mock_lazy_loader.js');
 require('/dialer/test/unit/mock_l10n.js');
 require('/dialer/test/unit/mock_utils.js');
 require('/dialer/test/unit/mock_call.js');
-require('/dialer/test/unit/mock_call_button.js');
 require('/dialer/test/unit/mock_call_handler.js');
 require('/dialer/test/unit/mock_call_log_db_manager.js');
 require('/dialer/test/unit/mock_calls_handler.js');
@@ -24,6 +24,7 @@ require('/shared/test/unit/mocks/mock_iccmanager.js');
 require('/shared/test/unit/mocks/mock_navigator_moz_settings.js');
 require('/shared/test/unit/mocks/mock_settings_listener.js');
 require('/shared/test/unit/mocks/mock_sim_picker.js');
+require('/shared/test/unit/mocks/mock_multi_sim_action_button.js');
 
 require('/dialer/test/unit/mock_dialer_index.html.js');
 
@@ -31,7 +32,7 @@ var mocksHelperForKeypad = new MocksHelper([
   'LazyL10n',
   'LazyLoader',
   'Utils',
-  'CallButton',
+  'MultiSimActionButton',
   'CallsHandler',
   'CallHandler',
   'CallLogDBManager',
@@ -61,6 +62,7 @@ suite('dialer/keypad', function() {
     previousBody = document.body.innerHTML;
     document.body.innerHTML = MockDialerIndexHtml;
     subject = KeypadManager;
+    subject.init(false);
   });
 
   suiteTeardown(function() {
@@ -104,7 +106,8 @@ suite('dialer/keypad', function() {
     });
 
     test('Get IMEI via send MMI', function() {
-      var callSpy = this.sinon.spy(CallButton, 'makeCall');
+      var callSpy =
+        this.sinon.spy(MockMultiSimActionButtonSingleton, 'performAction');
 
       var mmi = '*#06#';
       var fakeEvent = {
@@ -209,7 +212,7 @@ suite('dialer/keypad', function() {
       });
     });
 
-    suite('Audible and DTMF tones during  a call', function() {
+    suite('During  a call', function() {
       var mockCall;
       var mockHC;
 
@@ -232,6 +235,7 @@ suite('dialer/keypad', function() {
         this.sinon.stub(document, 'elementFromPoint');
 
         subject.init(true);
+        subject.render('oncall');
       });
 
       teardown(function() {
@@ -240,54 +244,74 @@ suite('dialer/keypad', function() {
         subject.init(false);
       });
 
-      test('Pressing a button during a call plays a long tone', function() {
-        var startSpy = this.sinon.spy(MockTonePlayer, 'start');
+      suite('Audible and DTMF tones', function() {
+        test('Pressing a button during a call plays a long tone', function() {
+          var startSpy = this.sinon.spy(MockTonePlayer, 'start');
 
-        subject._touchStart('1');
-        assert.isTrue(startSpy.calledWith(gTonesFrequencies['1'], false));
+          subject._touchStart('1');
+          assert.isTrue(startSpy.calledWith(gTonesFrequencies['1'], false));
+        });
+
+        test('Short tones are enabled via prefs', function() {
+          var startSpy = this.sinon.spy(MockTonePlayer, 'start');
+
+          MockSettingsListener.mCallbacks['phone.dtmf.type']('short');
+          subject._touchStart('1');
+          assert.isTrue(startSpy.calledWith(gTonesFrequencies['1'], true));
+        });
+
+        test('Pressing a button during a call plays a DTMF tone', function() {
+          var startToneSpy = this.sinon.spy(MockMozTelephony, 'startTone');
+          var stopToneSpy = this.sinon.spy(MockMozTelephony, 'stopTone');
+
+          subject._touchStart('1');
+          assert.isTrue(stopToneSpy.calledOnce);
+          assert.isTrue(startToneSpy.calledWith('1'));
+          subject._touchEnd('1');
+          assert.equal(stopToneSpy.callCount, 2);
+        });
+
+        test('Long DTMF tones stop when leaving the button', function() {
+          var stopToneSpy = this.sinon.spy(MockMozTelephony, 'stopTone');
+
+          MockSettingsListener.mCallbacks['phone.dtmf.type']('long');
+
+          subject._touchStart('1');
+          assert.isTrue(stopToneSpy.calledOnce);
+          document.elementFromPoint.returns({ dataset: { value: '2' }});
+          subject._touchMove({ pageX: 0, pageY: 0 });
+          assert.equal(stopToneSpy.callCount, 2);
+        });
+
+        test('Short DTMF tones stop after 120ms', function() {
+          var stopToneSpy = this.sinon.spy(MockMozTelephony, 'stopTone');
+
+          MockSettingsListener.mCallbacks['phone.dtmf.type']('short');
+
+          subject._touchStart('1');
+          this.sinon.clock.tick(119);
+          assert.isTrue(stopToneSpy.calledOnce);
+          this.sinon.clock.tick(1);
+          assert.equal(stopToneSpy.callCount, 2);
+        });
       });
 
-      test('Short tones are enabled via prefs', function() {
-        var startSpy = this.sinon.spy(MockTonePlayer, 'start');
+      suite('then during a conference group', function() {
+        setup(function() {
+          MockCallsHandler.mActiveCall = null;
+        });
 
-        MockSettingsListener.mCallbacks['phone.dtmf.type']('short');
-        subject._touchStart('1');
-        assert.isTrue(startSpy.calledWith(gTonesFrequencies['1'], true));
-      });
+        test('should not fail while typing', function() {
+          subject._touchStart('1');
+          this.sinon.clock.tick();
+          assert.ok(true, 'got here');
+        });
 
-      test('Pressing a button during a call plays a DTMF tone', function() {
-        var startToneSpy = this.sinon.spy(MockMozTelephony, 'startTone');
-        var stopToneSpy = this.sinon.spy(MockMozTelephony, 'stopTone');
-
-        subject._touchStart('1');
-        assert.isTrue(stopToneSpy.calledOnce);
-        assert.isTrue(startToneSpy.calledWith('1'));
-        subject._touchEnd('1');
-        assert.equal(stopToneSpy.callCount, 2);
-      });
-
-      test('Long DTMF tones stop when leaving the button', function() {
-        var stopToneSpy = this.sinon.spy(MockMozTelephony, 'stopTone');
-
-        MockSettingsListener.mCallbacks['phone.dtmf.type']('long');
-
-        subject._touchStart('1');
-        assert.isTrue(stopToneSpy.calledOnce);
-        document.elementFromPoint.returns({ dataset: { value: '2' }});
-        subject._touchMove({ pageX: 0, pageY: 0 });
-        assert.equal(stopToneSpy.callCount, 2);
-      });
-
-      test('Short DTMF tones stop after 120ms', function() {
-        var stopToneSpy = this.sinon.spy(MockMozTelephony, 'stopTone');
-
-        MockSettingsListener.mCallbacks['phone.dtmf.type']('short');
-
-        subject._touchStart('1');
-        this.sinon.clock.tick(119);
-        assert.isTrue(stopToneSpy.calledOnce);
-        this.sinon.clock.tick(1);
-        assert.equal(stopToneSpy.callCount, 2);
+        test('should not fail when restoring infos', function() {
+          subject.restorePhoneNumber();
+          subject.restoreAdditionalContactInfo();
+          assert.ok(true, 'got here');
+        });
       });
     });
 
@@ -354,17 +378,19 @@ suite('dialer/keypad', function() {
     });
   });
 
-  suite('Initializing CallButton', function() {
-    test('Should initialize CallButton', function() {
-      var initSpy = this.sinon.spy(MockCallButton, 'init');
+  suite('Initializing MultiSimActionButton', function() {
+    setup(function() {
       subject.init(false);
-      sinon.assert.calledOnce(initSpy);
+    });
+
+    test('Should initialize MultiSimActionButton', function() {
+      assert.isTrue(MockMultiSimActionButtonSingleton.mIsInitialized);
     });
 
     test('Should pass a valid phone number getter', function() {
-      subject.init(false);
       subject._phoneNumber = '1111111';
-      assert.equal(subject._phoneNumber, MockCallButton._phoneNumberGetter());
+      assert.equal(subject._phoneNumber,
+        MockMultiSimActionButtonSingleton._phoneNumberGetter());
     });
   });
 });

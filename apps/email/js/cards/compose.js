@@ -138,6 +138,12 @@ function ComposeCard(domNode, mode, args) {
   this.htmlBodyContainer.addEventListener(
     'click', this._focusEditorWithCursorAtEnd.bind(this));
 
+  // Tracks if the card closed itself, in which case
+  // no draft saving is needed. If something else
+  // causes the card to die, then we want to save any
+  // state.
+  this._selfClosed = false;
+
   // Sent sound init
   this.sentAudioKey = 'mail.sent-sound.enabled';
   this.sentAudio = new Audio('/sounds/sent.ogg');
@@ -333,6 +339,7 @@ ComposeCard.prototype = {
   },
 
   _closeCard: function() {
+    this._selfClosed = true;
     Cards.removeCardAndSuccessors(this.domNode, 'animate');
   },
 
@@ -357,7 +364,7 @@ ComposeCard.prototype = {
         this.composer.hasDraft);
   },
 
-  _saveDraft: function(reason) {
+  _saveDraft: function(reason, callback) {
     // If the send process is happening, suppress automatic saves.
     // (Manual saves should not happen when 'sending' is true, but breaking
     // auto-saves would be very bad form.)
@@ -366,7 +373,7 @@ ComposeCard.prototype = {
       return;
     }
     this._saveStateToComposer();
-    this.composer.saveDraft();
+    this.composer.saveDraft(callback);
   },
 
   createBubbleNode: function(name, address) {
@@ -392,7 +399,7 @@ ComposeCard.prototype = {
    */
   insertBubble: function(node, name, address) {
     var container = node.parentNode;
-    var bubble = this.createBubbleNode(name, address);
+    var bubble = this.createBubbleNode(name || address, address);
     container.insertBefore(bubble, node);
   },
   /**
@@ -671,9 +678,13 @@ ComposeCard.prototype = {
 
     console.log('compose: back: save needed, prompting');
     var menu = cmpDraftMenuNode.cloneNode(true);
+    this._savePromptMenu = menu;
     document.body.appendChild(menu);
+
     var formSubmit = (function(evt) {
       document.body.removeChild(menu);
+      this._savePromptMenu = null;
+
       switch (evt.explicitOriginalTarget.id) {
         case 'cmp-draft-save':
           console.log('compose: explicit draft save on exit');
@@ -737,6 +748,14 @@ ComposeCard.prototype = {
     console.log('compose: initiating send');
     this.composer.finishCompositionSendMessage(
       function callback(error , badAddress, sentDate) {
+        // Card could have been destroyed in the meantime,
+        // via an app card reset (not a _selfClosed case),
+        // so do not bother with the rest of this work if
+        // that was the case.
+        if (!this.composer) {
+          return;
+        }
+
         console.log('compose: callback triggered, err:', error);
         // releasing the wake lock on send response
         this.releaseLocks();
@@ -793,7 +812,11 @@ ComposeCard.prototype = {
       activity.onsuccess = function success() {
         if (this.result.email) {
           var emt = contactBtn.parentElement.querySelector('.cmp-addr-text');
-          self.insertBubble(emt, this.result.name, this.result.email);
+          var name = this.result.name;
+          if (Array.isArray(name)) {
+              name = name[0];
+          }
+          self.insertBubble(emt, name, this.result.email);
           self.sendButton.setAttribute('aria-disabled', 'false');
         }
       };
@@ -844,7 +867,25 @@ ComposeCard.prototype = {
   die: function() {
     document.removeEventListener('visibilitychange',
                                  this._bound_onVisibilityChange);
+
+    // If confirming for prompt when destroyed, just remove
+    // and if save is needed, it will be autosaved below.
+    if (this._savePromptMenu) {
+      document.body.removeChild(this._savePromptMenu);
+      this._savePromptMenu = null;
+    }
+
+    // If something else besides the card causes this card
+    // to die, but we have a draft to save, do it now.
+    // However, wait for the draft save to complete before
+    // completely shutting down the composer.
+    if (!this._selfClosed && this._saveNeeded()) {
+      console.log('compose: autosaving draft because not self-closed');
+      this._saveDraft('automatic');
+    }
+
     this.releaseLocks();
+
     if (this.composer) {
       this.composer.die();
       this.composer = null;

@@ -27,7 +27,6 @@ section[role="region"] > header:first-child .icon.icon-clear {
   background-image: url(images/icons/clear.png);
   background-position: center calc(50% + 0.1rem);
   background-size: 3rem;
-  right: calc(-50% + 7rem);
   width: 2rem;
   margin: 0;
   padding: 0 2rem;
@@ -464,6 +463,10 @@ section.has-carrier .article-list header:first-child {
   background: #fff;
 }
 
+#messages-container[data-type="list"] ul {
+  background-color: #e4e4e4;
+}
+
 #messages-container[data-type="list"] .message.mms .bubble img {
   height: auto;
   width: auto;
@@ -474,7 +477,7 @@ section.has-carrier .article-list header:first-child {
 }
 
 .article-list[data-type="list"] .has-subject .bubble {
-  padding-top: 0rem;
+  padding-top: 0;
 }
 
 .article-list[data-type="list"] .has-subject .subject {
@@ -775,7 +778,7 @@ form.bottom[role="search"].messages-compose-form {
   line-height: 2rem;
 }
 
-#messages-dual-sim-information {
+.js-sim-indication {
   position: absolute;
   left: 0;
   top: 0.2rem;
@@ -788,11 +791,11 @@ form.bottom[role="search"].messages-compose-form {
   opacity: 0.5;
 }
 
-.dual-sim-configuration #messages-dual-sim-information {
+.has-preferred-sim .js-sim-indication {
   display: block;
 }
 
-.dual-sim-configuration #messages-send-button {
+.has-preferred-sim #messages-send-button {
   height: 4.5rem;
   padding-top: 0.5rem;
 
@@ -800,7 +803,7 @@ form.bottom[role="search"].messages-compose-form {
   background-position: left bottom, bottom;
 }
 
-.dual-sim-configuration #messages-send-button:after {
+.has-preferred-sim #messages-send-button:after {
   position: absolute;
   bottom: 0;
   left: 0;

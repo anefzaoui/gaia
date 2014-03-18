@@ -115,6 +115,10 @@
     transform: translateY(16rem);
   }
 
+  body.showKeypad #group-show {
+    display: none;
+  }
+
   #views > .view {
     height: 100%;
     width: 100%;
@@ -312,7 +316,7 @@
   }
 
   #callbar-hang-up > .callbar-inner-button {
-    margin: 1rem 0rem 1.5rem .5rem;
+    margin: 1rem 0 1.5rem .5rem;
     background: url('images/ActionIcon_40x40_hangup.png') center / 4rem no-repeat,
                 url('images/btn_hang_up.png') repeat-x;
   }
@@ -433,6 +437,10 @@
     padding-right: 7rem;
   }
 
+  #calls:not(.big-duration) > section:not(.ended) .duration:not(.isTimer) {
+    visibility: hidden;
+  }
+
   #calls.big-duration > section .numberWrapper,
   #calls.big-duration > section .additionalContactInfo,
   #calls.big-duration > section .switch-calls {
@@ -471,7 +479,7 @@
   #group-call-details-list .fake-number,
   #calls > section .fake-number {
     position: absolute;
-    line-height: 0rem;
+    line-height: 0;
     visibility: hidden;
     white-space: nowrap;
     padding: 0;
