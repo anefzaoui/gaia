@@ -1,7 +1,8 @@
 'use strict';
 
-mocha.globals(['Applications', 'HomescreenWindow', 'homescreenLauncher',
+mocha.globals(['applications', 'HomescreenWindow', 'homescreenLauncher',
               'SettingsListener', 'layoutManager']);
+
 
 requireApp('system/test/unit/mock_homescreen_window.js');
 requireApp('system/test/unit/mock_applications.js');
@@ -17,8 +18,17 @@ var mocksForHomescreenLauncher = new MocksHelper([
 ]).init();
 
 suite('system/HomescreenLauncher', function() {
-  var homescreen;
+  var homescreen, realApplications;
 
+  setup(function() {
+    realApplications = window.applications;
+    window.applications = MockApplications;
+  });
+
+  teardown(function() {
+    window.applications = realApplications;
+    realApplications = null;
+  });
   suite('start', function() {
     var homescreen;
     mocksForHomescreenLauncher.attachTestHelpers();
@@ -154,6 +164,24 @@ suite('system/HomescreenLauncher', function() {
       });
       assert.isTrue(stubFadeOut.called);
       stubFadeOut.restore();
+    });
+
+    test('cards view before shown, then closed', function() {
+      MockSettingsListener.mCallbacks['homescreen.manifestURL']('first.home');
+      homescreen = window.homescreenLauncher.getHomescreen();
+      var stubFadeOut = this.sinon.stub(homescreen, 'fadeOut');
+      window.homescreenLauncher.handleEvent({
+        type: 'cardviewbeforeshow'
+      });
+      assert.isTrue(stubFadeOut.called);
+      stubFadeOut.restore();
+
+      var stubFadeIn = this.sinon.stub(homescreen, 'fadeIn');
+      window.homescreenLauncher.handleEvent({
+        type: 'cardviewbeforeclose'
+      });
+      assert.isTrue(stubFadeIn.called);
+      stubFadeIn.restore();
     });
   });
 });

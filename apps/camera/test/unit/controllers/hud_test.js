@@ -12,13 +12,15 @@ suite('controllers/hud', function() {
       'views/hud',
       'views/controls',
       'views/viewfinder',
+      'views/notification',
       'lib/settings',
       'lib/setting'
     ], function(
-      App, Camera, HudController, HudView,
-      ControlsView, ViewfinderView, Settings, Setting
+      App, Camera, HudController, HudView, ControlsView,
+      ViewfinderView, NotificationView, Settings, Setting
     ) {
       self.HudController = HudController.HudController;
+      self.NotificationView = NotificationView;
       self.ViewfinderView = ViewfinderView;
       self.ControlsView = ControlsView;
       self.Settings = Settings;
@@ -35,6 +37,7 @@ suite('controllers/hud', function() {
     this.app.camera = sinon.createStubInstance(this.Camera);
     this.app.settings = sinon.createStubInstance(this.Settings);
     this.app.views = {
+      notification: sinon.createStubInstance(this.NotificationView),
       viewfinder: sinon.createStubInstance(this.ViewfinderView),
       controls: sinon.createStubInstance(this.ControlsView),
       hud: sinon.createStubInstance(this.HudView)
@@ -43,20 +46,20 @@ suite('controllers/hud', function() {
     // Stub 'cameras' setting
     this.app.settings.cameras = sinon.createStubInstance(this.Setting);
     this.app.settings.flashModes = sinon.createStubInstance(this.Setting);
+    this.app.settings.showSettings = sinon.createStubInstance(this.Setting);
+    this.app.settings.mode = sinon.createStubInstance(this.Setting);
     this.app.settings.cameras.get.withArgs('options').returns([]);
-    this.app.settings.get.withArgs('cameras')
-      .returns(this.app.settings.cameras);
-    this.app.settings.get.withArgs('flashModes')
-      .returns(this.app.settings.flashModes);
 
     // For convenience
-    this.hud = this.app.views.hud;
-    this.controls = this.app.views.controls;
+    this.notification = this.app.views.notification;
     this.viewfinder = this.app.views.viewfinder;
+    this.controls = this.app.views.controls;
+    this.settings = this.app.settings;
     this.camera = this.app.camera;
+    this.hud = this.app.views.hud;
 
     // Our test instance
-    this.hudController = new this.HudController(this.app);
+    this.controller = new this.HudController(this.app);
   });
 
   suite('HudController()', function() {
@@ -66,26 +69,57 @@ suite('controllers/hud', function() {
       assert.ok(this.app.on.calledWith('change:recording'));
     });
 
-    test('Should disable controls when the camera is \'busy\'', function() {
-      var disableButtons = this.hudController.disableButtons;
-      assert.ok(this.app.on.calledWith('camera:busy', disableButtons));
+    test('Should hide controls when the camera is \'busy\'', function() {
+      assert.ok(this.app.on.calledWith('camera:busy', this.hud.hide));
     });
 
-    test('Should enable controls when the camera is \'ready\'', function() {
-      var enableButtons = this.hudController.enableButtons;
-      assert.ok(this.app.on.calledWith('camera:ready', enableButtons));
+    test('Should show controls when the camera is \'ready\'', function() {
+      this.controller.onCameraReady();
+      assert.ok(this.hud.show.called);
     });
   });
 
-  suite('HudController#onRecordingChange', function() {
+  suite('HudController#onRecordingChange()', function() {
     test('Should disable the hide the hud buttons when recording', function() {
-      this.hudController.onRecordingChange(true);
-      assert.ok(this.hud.hide.calledWithExactly('flash', true));
-      assert.ok(this.hud.hide.calledWithExactly('camera', true));
+      this.controller.onRecordingChange(true);
+      assert.ok(this.hud.toggle.calledWithExactly(false));
       this.hud.hide.reset();
-      this.hudController.onRecordingChange(false);
-      assert.ok(this.hud.hide.calledWithExactly('flash', false));
-      assert.ok(this.hud.hide.calledWithExactly('camera', false));
+      this.controller.onRecordingChange(false);
+      assert.ok(this.hud.toggle.calledWithExactly(true));
     });
   });
+
+  suite('HudController#onFlashClick()', function() {
+    test('Should cycle to the next flash setting', function() {
+      this.controller.onFlashClick();
+      assert.ok(this.settings.flashModes.next.calledOnce);
+    });
+
+    test('Should set the new value on the hud view', function() {
+      this.settings.flashModes.selected.withArgs('key').returns('auto');
+      this.controller.onFlashClick();
+      assert.ok(this.hud.set.calledWith('flashMode', 'auto'));
+    });
+
+    test('Should notify', function() {
+      sinon.spy(this.controller, 'notify');
+      this.controller.onFlashClick();
+      assert.ok(this.controller.notify.called);
+    });
+  });
+
+  suite('HudController#notify()', function() {
+    test('Should display a notification', function() {
+      this.controller.onFlashClick();
+      assert.ok(this.notification.display.called);
+    });
+  });
+
+  suite('HudController#onModeChange()', function() {
+    test('Should hide the displayed notification when the camera mode changes', function() {
+      this.controller.onModeChange();
+      assert.ok(this.notification.clear.called);
+    });
+  });
+
 });

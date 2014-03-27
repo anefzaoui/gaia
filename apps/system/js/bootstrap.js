@@ -10,6 +10,12 @@ window.addEventListener('load', function startup() {
    */
   function registerGlobalEntries() {
     /** @global */
+    window.appWindowFactory = new AppWindowFactory();
+    window.appWindowFactory.start();
+    /** @global */
+    window.activityWindowFactory = new ActivityWindowFactory();
+    window.activityWindowFactory.start();
+    /** @global */
     window.secureWindowManager = window.secureWindowManager ||
       new SecureWindowManager();
     /** @global */
@@ -18,8 +24,6 @@ window.addEventListener('load', function startup() {
     if (window.SuspendingAppPriorityManager) {
       window.suspendingAppPriorityManager = new SuspendingAppPriorityManager();
     }
-    /** @global */
-    window.activityWindowFactory = new ActivityWindowFactory();
   }
 
   function safelyLaunchFTU() {
@@ -31,7 +35,7 @@ window.addEventListener('load', function startup() {
     window.homescreenLauncher = new HomescreenLauncher().start();
   }
 
-  if (Applications.ready) {
+  if (applications.ready) {
     registerGlobalEntries();
     safelyLaunchFTU();
   } else {
@@ -77,6 +81,11 @@ window.addEventListener('load', function startup() {
   window.title = new Title();
   window.ttlView = new TTLView();
   window.visibilityManager = new VisibilityManager().start();
+  window.layoutManager = new LayoutManager().start();
+
+  navigator.mozL10n.ready(function l10n_ready() {
+    window.mediaRecording = new MediaRecording().start();
+  });
 
   // We need to be sure to get the focus in order to wake up the screen
   // if the phone goes to sleep before any user interaction.

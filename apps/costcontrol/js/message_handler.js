@@ -242,10 +242,22 @@
       ConfigManager.setOption(update, callback);
     };
   }
+  window.sendBalanceThresholdNotification = sendBalanceThresholdNotification;
 
   // When receiving an alarm, differenciate by type and act
   function _onAlarm(alarm) {
     clearTimeout(closing);
+
+    function _launchNextReset() {
+      ConfigManager.requestSettings(Common.dataSimIccId,
+                                    function _onSettings(settings) {
+        resetAll(function updateNextResetAndClose() {
+          updateNextReset(settings.trackingPeriod, settings.resetTime,
+                          closeIfProceeds);
+        });
+      });
+    }
+
     switch (alarm.data.type) {
       case 'balanceTimeout':
         ConfigManager.requestSettings(Common.dataSimIccId,
@@ -280,15 +292,11 @@
         break;
 
       case 'nextReset':
-        ConfigManager.requestSettings(Common.dataSimIccId,
-                                      function _onSettings(settings) {
-          resetAll(function updateNextResetAndClose() {
-            updateNextReset(
-              settings.trackingPeriod, settings.resetTime,
-              closeIfProceeds
-            );
-          });
-        });
+        if (!Common.allNetworkInterfaceLoaded) {
+          Common.loadNetworkInterfaces(_launchNextReset);
+        } else {
+          _launchNextReset();
+        }
         break;
     }
   }
