@@ -39,7 +39,6 @@
 .controls-left {
   justify-content: flex-end;
   opacity: 1;
-  pointer-events: auto;
   transition: opacity 200ms ease-in-out;
 }
 
@@ -49,7 +48,6 @@
 
 .controls[recording=true] .controls-left {
   opacity: 0;
-  pointer-events: none;
 }
 
 /** Right
@@ -187,8 +185,9 @@
   line-height: 3.6rem;
 }
 
-.mode-switch .mode-icon:after {
+.mode-switch .mode-icon:before {
   content: "\e602";
+  font-size: 2.1rem;
   color: #C7C7C7;
 }
 
@@ -200,7 +199,7 @@
   left: 1.1rem;
 }
 
-.controls[mode=video] .mode-switch .mode-icon:after {
+.controls[mode=video] .mode-switch .mode-icon:before {
   content: "\e60f";
 }
 
@@ -213,7 +212,8 @@
   height: 3.6rem;
   border-radius: 50%;
   background: #EEE;
-  transition: transform 100ms;
+  will-change: transform;
+  transition: transform 140ms;
 }
 
 /**
@@ -227,10 +227,11 @@
 /** Selected Mode Icon
  ---------------------------------------------------------*/
 
-.mode-switch .selected-mode-icon:after {
+.mode-switch .selected-mode-icon:before {
   content: "\e60f";
   display: block;
   text-align: center;
+  font-size: 1.8rem;
   line-height: 3.6rem;
   color: #00CAF2;
 }
@@ -239,7 +240,7 @@
  * mode=video
  */
 
-.controls[mode=video] .mode-switch .selected-mode-icon:after {
+.controls[mode=video] .mode-switch .selected-mode-icon:before {
   content: "\e602";
   color: #D92E2E;
 }
@@ -282,15 +283,18 @@
 
 .capture-button .inner-circle {
   background-color: white;
+  will-change: transform;
   transform: scale(0.76);
-  transition: transform 100ms ease-in;
+  transition: transform 150ms ease-in;
 }
 
 /**
- * :active
+ * :active,
+ * capture-active=true & mode=picture
  */
 
-.capture-button:active .inner-circle {
+.capture-button:active .inner-circle,
+[capture-active=true] .capture-button .inner-circle {
   background-color: #00caf2;
   color: white;
   transform: scale(1.0);
@@ -308,23 +312,15 @@
  * mode=video & :active
  */
 
-.controls[mode=video] .capture-button:active .inner-circle {
-  background-color: #D92E2E;
-  transform: scale(0.76);
-}
-
-/**
- * mode=video & recording=true
- */
-
-.controls[mode=video][recording=true] .capture-button .inner-circle {
+.controls[mode=video] .capture-button:active .inner-circle,
+.controls[mode=video][capture-active=true] .capture-button .inner-circle {
   background-color: #D92E2E;
 }
 
 /** Icon
  ---------------------------------------------------------*/
 
-.capture-button .center:after {
+.capture-button .center:before {
   display: block;
   position: absolute;
   width: 100%;
@@ -334,14 +330,15 @@
   text-align: center;
   color: #81ACB6;
   content: "\e60f";
-  transition: none;
 }
 
 /**
- * :active
+ * :active,
+ * capture-active=true & mode=picture
  */
 
-.capture-button:active .center:after {
+.capture-button:active .center:before,
+[capture-active=true] .capture-button .center:before {
   color: white;
 }
 
@@ -349,7 +346,8 @@
  * mode=video
  */
 
-.controls[mode=video] .capture-button .center:after {
+.controls[mode=video] .capture-button .center:before {
+  content: '';
   top: calc(50% - 1rem);
   left: calc(50% - 1rem);
   width: 2rem;
@@ -357,14 +355,14 @@
   border-radius: 50%;
   background-color: #D92E2E;
   color: white;
-  content: "";
 }
 
 /**
  * mode=video & recording=true
  */
 
-.controls[mode=video][recording=true] .capture-button .center:after {
+.controls[mode=video] .capture-button:active .center:before,
+.controls[mode=video][capture-active=true] .capture-button .center:before {
   border-radius: 25%;
   background-color: white;
 }

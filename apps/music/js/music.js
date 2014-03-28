@@ -168,13 +168,8 @@ function init() {
     if (typeof PlayerView !== 'undefined')
       PlayerView.stop();
 
-    // Generally when the user select one of the tabs, it should trigger the
-    // css pseudo-class to highlight the selected tab, but here we manually
-    // select the mix page so we have to change the hash to it to trigger the
-    // css pseudo-class or the tab of mix page will not be highlighted.
-    // Also the option of the TabBar should be set to "mix" to sync with it.
+    // TabBar should be set to "mix" to sync with the tab selection.
     if (!pendingPick) {
-      window.location.hash = '#mix';
       TabBar.option = 'mix';
       ModeManager.start(MODE_TILES);
       TilesView.hideSearch();
@@ -1903,6 +1898,11 @@ var TabBar = {
     return this._view = document.getElementById('tabs');
   },
 
+  get tabs() {
+    delete this._tabs;
+    return this._tabs = this.view.querySelectorAll('[role="tab"]');
+  },
+
   init: function tab_init() {
     this.option = '';
     this.view.addEventListener('click', this);
@@ -1940,6 +1940,8 @@ var TabBar = {
         } else {
           this.option = target.dataset.option;
         }
+
+        AccessibilityHelper.setAriaSelected(target, this.tabs);
 
         switch (target.id) {
           case 'tabs-mix':
