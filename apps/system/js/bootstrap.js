@@ -24,6 +24,9 @@ window.addEventListener('load', function startup() {
     if (window.SuspendingAppPriorityManager) {
       window.suspendingAppPriorityManager = new SuspendingAppPriorityManager();
     }
+    /** @global */
+    window.systemDialogManager = window.systemDialogManager ||
+      new SystemDialogManager();
   }
 
   function safelyLaunchFTU() {
@@ -72,6 +75,7 @@ window.addEventListener('load', function startup() {
   window.devtoolsView = new DevtoolsView();
   window.dialerRinger = new DialerRinger().start();
   window.homeGesture = new HomeGesture().start();
+  window.layoutManager = new LayoutManager().start();
   window.remoteDebugger = new RemoteDebugger();
   window.softwareButtonManager = new SoftwareButtonManager().start();
 
