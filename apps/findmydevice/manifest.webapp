@@ -22,6 +22,12 @@
     "settings":{ "access": "readwrite" },
     "systemXHR": {}
   },
+  "locales": {
+    "en-US": {
+      "name": "Find My Device",
+      "description": "Find My Device helps find, lock and erase a lost phone"
+    }
+  },
   "messages": [
     { "alarm": "/index.html" },
     { "push": "/index.html" },
