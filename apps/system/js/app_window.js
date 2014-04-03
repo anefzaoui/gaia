@@ -560,7 +560,7 @@
     ['mozbrowserclose', 'mozbrowsererror', 'mozbrowservisibilitychange',
      'mozbrowserloadend', 'mozbrowseractivitydone', 'mozbrowserloadstart',
      'mozbrowsertitlechange', 'mozbrowserlocationchange',
-     'mozbrowsericonchange',
+     'mozbrowsericonchange', 'mozbrowserselectionchange',
      '_localized', '_swipein', '_swipeout', '_kill_suspended'];
 
   AppWindow.SUB_COMPONENTS = {
@@ -568,7 +568,8 @@
     'modalDialog': window.AppModalDialog,
     'authDialog': window.AppAuthenticationDialog,
     'contextmenu': window.BrowserContextMenu,
-    'childWindowFactory': window.ChildWindowFactory
+    'childWindowFactory': window.ChildWindowFactory,
+    'textSelectionDialog': window.TextSelectionDialog
   };
 
   AppWindow.prototype.openAnimation = 'enlarge';
@@ -752,6 +753,10 @@
     function aw__handle_mozbrowsericonchange(evt) {
       this.config.favicon = evt.detail;
       this.publish('iconchange');
+    };
+
+  AppWindow.prototype._handle_mozbrowserselectionchange =
+    function aw__handle_mozbrowserselectionchange(evt) {
     };
 
   AppWindow.prototype._registerEvents = function aw__registerEvents() {

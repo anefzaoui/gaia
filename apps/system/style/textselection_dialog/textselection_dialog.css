@@ -1,0 +1,42 @@
+.appWindow > .textselection-dialog {
+  height: auto;
+  width: auto;
+  padding: 0 0 7rem;
+  position: absolute;
+}
+
+.appWindow > .textselection-dialog.visible {
+  display: block;
+}
+
+.appWindow > .textselection-dialog {
+  display: none;
+}
+
+.textselection-dialog-copy {
+  background-color: red;
+  display: inline-block;
+  height: 3rem;
+  width: 5rem;
+}
+
+.textselection-dialog-cut {
+  background-color: green;
+  display: inline-block;
+  height: 3rem;
+  width: 5rem;
+}
+
+.textselection-dialog-paste {
+  background-color: blue;
+  display: inline-block;
+  height: 3rem;
+  width: 5rem;
+}
+
+.textselection-dialog-selectall {
+  background-color: purple;
+  display: inline-block;
+  height: 3rem;
+  width: 5rem;
+}
