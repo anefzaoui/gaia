@@ -82,6 +82,9 @@ Icon.prototype = {
      * <li role="button" aria-label="label" class="icon" data-manifestURL="zzz">
      *   <div>
      *     <img role="presentation" src="the icon image path"></img>
+     *     <div class="appBadge">
+     *        <div class="appBadgeText">4</div>
+     *     </div>
      *     <span class="label">label</span>
      *   </div>
      *   <span class="options"></span>
@@ -145,8 +148,20 @@ Icon.prototype = {
     this.applyOverflowTextMask();
 
     icon.appendChild(wrapper);
-
+    
     container.appendChild(icon);
+    
+    // App Badges
+    var abadge = document.createElement('div');
+    abadge.className = 'appBadge';
+    abadge.classList.add = 'hidden';
+    var abadgeText = document.createElement('div');
+    abadgeText.className = 'appBadgeText';
+    abadgeText.textContent = '4';
+
+    abadge.appendChild(abadgeText);
+
+    icon.appendChild(abadge);
 
     if (descriptor.removable === true) {
       this.appendOptions();
