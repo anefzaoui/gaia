@@ -347,3 +347,19 @@ section[role="region"].skin-organic header h2,
   color: #4d4d4d;
   border: none;
 }
+
+/* RTL View */
+[dir="rtl"] section[role="region"] > header:first-child menu {
+  float: left;
+}
+
+[dir="rtl"] section[role="region"] > header:first-child a,
+[dir="rtl"] section[role="region"] > header:first-child button {
+  float: right;
+}
+
+[dir="rtl"] section[role="region"].skin-organic > header:first-child .icon-back,
+[dir="rtl"] .skin-organic section[role="region"] > header:first-child .icon-back,
+[dir="rtl"] section[role="region"] > header:first-child .icon-back {
+  transform: scaleX(-1);
+}

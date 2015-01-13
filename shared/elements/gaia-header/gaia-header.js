@@ -43,6 +43,7 @@ module.exports = Component.register('gaia-header', {
       inner: this.shadowRoot.querySelector('.inner')
     };
 
+    addEventListener('localized', this.attached.bind(this));
     this.els.actionButton.addEventListener('click', e => this.onActionButtonClick(e));
     this.configureActionButton();
     this.runFontFit();
@@ -68,6 +69,7 @@ module.exports = Component.register('gaia-header', {
     if (attr === 'action') {
       this.configureActionButton();
       this.rerunFontFit();
+      this.els.inner.setAttribute('dir', getComputedStyle(this).direction);
     }
   },
 
@@ -183,7 +185,6 @@ module.exports = Component.register('gaia-header', {
   .inner {
     display: flex;
     min-height: 50px;
-    direction: ltr;
 
     background:
       var(--header-background,
@@ -415,6 +416,7 @@ module.exports = Component.register('gaia-header', {
   .icon-menu:before { content: 'menu'; }
   .icon-close:before { content: 'close'; }
   .icon-back:before { content: 'back'; }
+  [dir="rtl"] .icon-back::before { content: 'forward'; }
 
   </style>
 

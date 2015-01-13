@@ -299,12 +299,10 @@ form[role="dialog"][data-type="edit"] > menu {
 #messages-new-message-notice {
   display: flex;
   flex-direction: row;
-
   padding: 1rem;
   -moz-padding-start: 2rem;
   -moz-padding-end: 1.5rem;
   overflow: hidden;
-
   white-space: nowrap;
   line-height: 2rem;
   font-size: 1.8rem;
@@ -992,6 +990,20 @@ html[dir="rtl"] .edit .message.incoming .bubble {
 html[dir="rtl"] #messages-contact-pick-button .icon-user {
   left: 1rem;
   right: unset;
+}
+
+html[dir="rtl"] #main-wrapper[data-position='left'] .panel {
+  transform: translateX(100%);
+}
+
+html[dir="rtl"] .panel {
+  left: unset;
+  right: 100%;
+}
+
+html[dir="rtl"] .panel:first-child {
+  left: unst;
+  right: 0px;
 }
 
 /* RTL for recipient panel */

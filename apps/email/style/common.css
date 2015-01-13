@@ -380,3 +380,28 @@ cards-setup-fix-gmail .sup-gmail-account {
   text-align: center;
   font-size: 1.4rem;
 }
+
+/* RTL View */
+html[dir="rtl"] .card.before {
+  transform: translateX(100%);
+}
+
+html[dir="rtl"] .card.before.anim-vertical {
+  transform: translateY(-100%);
+}
+
+html[dir="rtl"] .card.before.upflow.anim-vertical {
+  transform: translateY(100%);
+}
+
+html[dir="rtl"] .card.after {
+  transform: translateX(-100%);
+}
+
+html[dir="rtl"] .card.after.anim-vertical {
+  transform: translateY(100%);
+}
+
+html[dir="rtl"] .card.after.upflow.anim-vertical {
+  transform: translateY(-100%);
+}
